@@ -1,5 +1,6 @@
 { lib
 , buildGoModule
+, stdenv
 }:
 
 buildGoModule rec {
@@ -17,5 +18,6 @@ buildGoModule rec {
     maintainers = with maintainers; [ 
       "scottjab@gmail.com"
     ];
+    platforms = platforms.unix;
   };
 } 

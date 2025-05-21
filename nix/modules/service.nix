@@ -7,34 +7,47 @@ let
   package = cfg.package;
 in {
   options.services.cablebox-control = {
-    enable = mkOption {
-      type = types.bool;
-      default = false;
-      description = "Enable the cablebox-control service.";
-    };
+    enable = mkEnableOption "Cablebox Control Service";
+
     package = mkOption {
       type = types.package;
       description = "The cablebox-control package to use.";
     };
+
     statusSocket = mkOption {
-      type = types.str;
-      default = "FieldStation42/runtime/play_status.socket";
+      type = types.path;
+      default = "/run/FieldStation42/runtime/play_status.socket";
       description = "Path to the play status socket.";
     };
+
     channelSocket = mkOption {
-      type = types.str;
-      default = "FieldStation42/runtime/channel.socket";
+      type = types.path;
+      default = "/run/FieldStation42/runtime/channel.socket";
       description = "Path to the channel socket.";
     };
+
     listenAddress = mkOption {
       type = types.str;
-      default = ":8080";
+      default = "127.0.0.1:8080";
       description = "Address to listen on (e.g. ':8080' or '127.0.0.1:8080').";
     };
+
     extraArgs = mkOption {
       type = types.listOf types.str;
       default = [];
       description = "Extra arguments to pass to cablebox-control.";
+    };
+
+    user = mkOption {
+      type = types.str;
+      default = "cablebox-control";
+      description = "User account under which cablebox-control runs.";
+    };
+
+    group = mkOption {
+      type = types.str;
+      default = "cablebox-control";
+      description = "Group under which cablebox-control runs.";
     };
   };
 
@@ -61,13 +74,13 @@ in {
         };
       };
     } else {
-      users.users.cablebox-control = {
+      users.users.${cfg.user} = {
         isSystemUser = true;
-        group = "cablebox-control";
+        group = cfg.group;
         description = "Cablebox Control Service User";
       };
 
-      users.groups.cablebox-control = {};
+      users.groups.${cfg.group} = {};
 
       systemd.services.cablebox-control = {
         description = "Cablebox Control Service";
@@ -78,8 +91,11 @@ in {
             ${package}/bin/cablebox-control ${concatStringsSep " " args}
           '';
           Restart = "on-failure";
-          User = "cablebox-control";
-          Group = "cablebox-control";
+          User = cfg.user;
+          Group = cfg.group;
+          DynamicUser = false;
+          StateDirectory = "cablebox-control";
+          StateDirectoryMode = "0750";
         };
       };
     }
