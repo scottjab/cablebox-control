@@ -64,6 +64,14 @@ in {
         };
       };
     } else {
+      users.users.cablebox-control = {
+        isSystemUser = true;
+        group = "cablebox-control";
+        description = "Cablebox Control Service User";
+      };
+
+      users.groups.cablebox-control = {};
+
       systemd.services.cablebox-control = {
         description = "Cablebox Control Service";
         after = [ "network.target" ];
@@ -76,9 +84,6 @@ in {
           User = "cablebox-control";
           Group = "cablebox-control";
         };
-        preStart = ''
-          getent passwd cablebox-control > /dev/null || useradd -r -s /sbin/nologin cablebox-control
-        '';
       };
     }
   );
