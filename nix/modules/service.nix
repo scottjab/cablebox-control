@@ -20,7 +20,7 @@ in
     enable = mkEnableOption "cablebox-control service";
     package = mkOption {
       type = package;
-      default = pkgs.callPackage ../../packages { };
+      default = pkgs.cablebox-control;
       description = "The cablebox-control package to use.";
     };
     statusSocket = mkOption {
