@@ -55,8 +55,10 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    imports = lib.optional pkgs.stdenv.isDarwin (import ./darwin.nix { inherit config lib pkgs; })
-      ++ lib.optional (!pkgs.stdenv.isDarwin) (import ./linux.nix { inherit config lib pkgs; });
-  };
+  config = mkIf cfg.enable (
+    if pkgs.stdenv.isDarwin then
+      import ./darwin.nix { inherit config lib pkgs; }
+    else
+      import ./linux.nix { inherit config lib pkgs; }
+  );
 }
