@@ -14,11 +14,12 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        package = pkgs.callPackage ./package.nix { };
       in
       {
         packages = {
-          default = pkgs.callPackage ./default.nix { };
-          cablebox-control = pkgs.callPackage ./default.nix { };
+          default = package;
+          cablebox-control = package;
         };
 
         devShells.default = pkgs.mkShell {
@@ -29,7 +30,7 @@
           ];
         };
       }) // {
-        nixosModule = import ./module.nix;
-        darwinModule = import ./module.nix;
+        nixosModule = { config, lib, pkgs, ... }: import ./module.nix { inherit config lib pkgs; package = self.packages.${pkgs.system}.cablebox-control; };
+        darwinModule = { config, lib, pkgs, ... }: import ./module.nix { inherit config lib pkgs; package = self.packages.${pkgs.system}.cablebox-control; };
       };
 } 
