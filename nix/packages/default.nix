@@ -1,6 +1,7 @@
-{ lib
-, buildGoModule
-, stdenv
+{
+  lib,
+  buildGoModule,
+  stdenv,
 }:
 
 buildGoModule rec {
@@ -15,9 +16,9 @@ buildGoModule rec {
     description = "Cablebox control application";
     homepage = "https://github.com/scottjab/cablebox-control";
     license = licenses.mit;
-    maintainers = with maintainers; [ 
+    maintainers = with maintainers; [
       "scottjab@gmail.com"
     ];
     platforms = platforms.unix;
   };
-} 
+}

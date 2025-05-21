@@ -1,11 +1,17 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
   cfg = config.services.cablebox-control;
   package = cfg.package;
-in {
+in
+{
   options.services.cablebox-control = {
     enable = mkEnableOption "Cablebox Control Service";
 
@@ -34,7 +40,7 @@ in {
 
     extraArgs = mkOption {
       type = types.listOf types.str;
-      default = [];
+      default = [ ];
       description = "Extra arguments to pass to cablebox-control.";
     };
 
@@ -59,45 +65,48 @@ in {
         "--listen=${cfg.listenAddress}"
       ] ++ cfg.extraArgs;
     in
-    if pkgs.stdenv.isDarwin then {
-      launchd.user.agents.cablebox-control = {
-        enable = true;
-        config = {
-          Label = "com.github.scottjab.cablebox-control";
-          ProgramArguments = [
-            "${package}/bin/cablebox-control"
-          ] ++ args;
-          RunAtLoad = true;
-          KeepAlive = true;
-          StandardErrorPath = "/tmp/cablebox-control.err.log";
-          StandardOutPath = "/tmp/cablebox-control.out.log";
+    if pkgs.stdenv.isDarwin then
+      {
+        launchd.user.agents.cablebox-control = {
+          enable = true;
+          config = {
+            Label = "com.github.scottjab.cablebox-control";
+            ProgramArguments = [
+              "${package}/bin/cablebox-control"
+            ] ++ args;
+            RunAtLoad = true;
+            KeepAlive = true;
+            StandardErrorPath = "/tmp/cablebox-control.err.log";
+            StandardOutPath = "/tmp/cablebox-control.out.log";
+          };
         };
-      };
-    } else {
-      users.users.${cfg.user} = {
-        isSystemUser = true;
-        group = cfg.group;
-        description = "Cablebox Control Service User";
-      };
-
-      users.groups.${cfg.group} = {};
-
-      systemd.services.cablebox-control = {
-        description = "Cablebox Control Service";
-        after = [ "network.target" ];
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          ExecStart = ''
-            ${package}/bin/cablebox-control ${concatStringsSep " " args}
-          '';
-          Restart = "on-failure";
-          User = cfg.user;
-          Group = cfg.group;
-          DynamicUser = false;
-          StateDirectory = "cablebox-control";
-          StateDirectoryMode = "0750";
+      }
+    else
+      {
+        users.users.${cfg.user} = {
+          isSystemUser = true;
+          group = cfg.group;
+          description = "Cablebox Control Service User";
         };
-      };
-    }
+
+        users.groups.${cfg.group} = { };
+
+        systemd.services.cablebox-control = {
+          description = "Cablebox Control Service";
+          after = [ "network.target" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = ''
+              ${package}/bin/cablebox-control ${concatStringsSep " " args}
+            '';
+            Restart = "on-failure";
+            User = cfg.user;
+            Group = cfg.group;
+            DynamicUser = false;
+            StateDirectory = "cablebox-control";
+            StateDirectoryMode = "0750";
+          };
+        };
+      }
   );
-} 
+}

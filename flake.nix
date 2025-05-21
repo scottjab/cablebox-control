@@ -10,39 +10,65 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, darwin }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      darwin,
+    }:
     let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      perSystem =
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          package = pkgs.callPackage ./nix/packages { };
+        in
+        {
+          packages = {
+            default = package;
+            cablebox-control = package;
+          };
+
+          devShells.default = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              go
+              gopls
+              gotools
+            ];
+          };
+        };
     in
-    flake-utils.lib.eachSystem supportedSystems (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        package = pkgs.callPackage ./nix/packages { };
-      in
-      {
-        packages = {
-          default = package;
-          cablebox-control = package;
+    flake-utils.lib.eachSystem supportedSystems perSystem
+    // {
+      nixosModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+        import ./nix/modules/service.nix {
+          inherit config lib pkgs;
+          package = pkgs.callPackage ./nix/packages { };
         };
 
-        devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            go
-            gopls
-            gotools
-          ];
+      darwinModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+        import ./nix/modules/service.nix {
+          inherit config lib pkgs;
+          package = pkgs.callPackage ./nix/packages { };
         };
-      }) // {
-        nixosModules.default = { config, lib, pkgs, ... }: 
-          import ./nix/modules/service.nix { 
-            inherit config lib pkgs; 
-            package = self.packages.${pkgs.system}.cablebox-control; 
-          };
-        
-        darwinModules.default = { config, lib, pkgs, ... }: 
-          import ./nix/modules/service.nix { 
-            inherit config lib pkgs; 
-            package = self.packages.${pkgs.system}.cablebox-control; 
-          };
-      };
-} 
+    };
+}
