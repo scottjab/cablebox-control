@@ -10,13 +10,7 @@
     };
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-      darwin,
-    }:
+  outputs = { self, nixpkgs, flake-utils, darwin }:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -24,8 +18,7 @@
         "x86_64-darwin"
         "aarch64-darwin"
       ];
-      perSystem =
-        system:
+      perSystem = system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           package = pkgs.callPackage ./nix/packages { };
@@ -47,28 +40,22 @@
     in
     flake-utils.lib.eachSystem supportedSystems perSystem
     // {
-      nixosModules.default =
-        {
-          config,
-          lib,
-          pkgs,
-          ...
-        }:
+      nixosModules.default = { config, lib, pkgs, ... }:
+        let
+          package = self.packages.${pkgs.system}.cablebox-control;
+        in
         import ./nix/modules/service.nix {
           inherit config lib pkgs;
-          package = pkgs.callPackage ./nix/packages { };
+          inherit package;
         };
 
-      darwinModules.default =
-        {
-          config,
-          lib,
-          pkgs,
-          ...
-        }:
+      darwinModules.default = { config, lib, pkgs, ... }:
+        let
+          package = self.packages.${pkgs.system}.cablebox-control;
+        in
         import ./nix/modules/service.nix {
           inherit config lib pkgs;
-          package = pkgs.callPackage ./nix/packages { };
+          inherit package;
         };
     };
 }
