@@ -4,13 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    darwin = {
-      url = "github:lnl7/nix-darwin";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, darwin }:
+  outputs = { self, nixpkgs, flake-utils }:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -41,7 +37,5 @@
     flake-utils.lib.eachSystem supportedSystems perSystem
     // {
       nixosModules.default = { config, lib, pkgs, ... }: import ./nix/modules/service.nix { inherit config lib pkgs; };
-
-      darwinModules.default = { config, lib, pkgs, ... }: import ./nix/modules/service.nix { inherit config lib pkgs; };
     };
 }
