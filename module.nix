@@ -5,7 +5,6 @@ with lib;
 let
   cfg = config.services.cablebox-control;
   package = cfg.package;
-  isDarwin = pkgs.stdenv.isDarwin;
 in {
   options.services.cablebox-control = {
     enable = mkOption {
@@ -15,8 +14,6 @@ in {
     };
     package = mkOption {
       type = types.package;
-      default = pkgs.cablebox-control or pkgs.callPackage ./default.nix { };
-      defaultText = literalExpression "pkgs.cablebox-control";
       description = "The cablebox-control package to use.";
     };
     statusSocket = mkOption {
@@ -49,7 +46,7 @@ in {
         "--listen=${cfg.listenAddress}"
       ] ++ cfg.extraArgs;
     in
-    if isDarwin then {
+    if pkgs.stdenv.isDarwin then {
       launchd.user.agents.cablebox-control = {
         enable = true;
         config = {
