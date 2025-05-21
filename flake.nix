@@ -41,21 +41,13 @@
     flake-utils.lib.eachSystem supportedSystems perSystem
     // {
       nixosModules.default = { config, lib, pkgs, ... }:
-        let
-          package = self.packages.${pkgs.system}.cablebox-control;
-        in
         import ./nix/modules/service.nix {
           inherit config lib pkgs;
-          inherit package;
         };
 
       darwinModules.default = { config, lib, pkgs, ... }:
-        let
-          package = self.packages.${pkgs.system}.cablebox-control;
-        in
         import ./nix/modules/service.nix {
           inherit config lib pkgs;
-          inherit package;
         };
     };
 }

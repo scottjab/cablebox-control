@@ -18,6 +18,7 @@ in
     package = mkOption {
       type = types.package;
       description = "The cablebox-control package to use.";
+      default = pkgs.cablebox-control;
     };
 
     statusSocket = mkOption {
