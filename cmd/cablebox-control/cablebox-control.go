@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -24,9 +25,10 @@ type ChannelCommand struct {
 	Channel int    `json:"channel"`
 }
 
-const (
-	playStatusSocket = "/home/scottjab/FieldStation42/runtime/play_status.socket"
-	channelSocket    = "/home/scottjab/FieldStation42/runtime/channel.socket"
+var (
+	playStatusSocket string
+	channelSocket    string
+	listenAddr       string
 )
 
 var htmlTemplate = `
@@ -163,14 +165,22 @@ var htmlTemplate = `
 `
 
 func main() {
+	// Define flags
+	flag.StringVar(&playStatusSocket, "status-socket", "FieldStation42/runtime/play_status.socket", "Path to the play status socket")
+	flag.StringVar(&channelSocket, "channel-socket", "FieldStation42/runtime/channel.socket", "Path to the channel socket")
+	flag.StringVar(&listenAddr, "listen", ":8080", "Address to listen on (e.g. ':8080' or '127.0.0.1:8080')")
+	flag.Parse()
+
 	http.HandleFunc("/", handleHome)
 	http.HandleFunc("/status", handleStatus)
 	http.HandleFunc("/channel/up", handleChannelUp)
 	http.HandleFunc("/channel/down", handleChannelDown)
 	http.HandleFunc("/channel/direct", handleChannelDirect)
 
-	fmt.Println("Server starting on :8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	fmt.Printf("Server starting on %s...\n", listenAddr)
+	fmt.Printf("Using status socket: %s\n", playStatusSocket)
+	fmt.Printf("Using channel socket: %s\n", channelSocket)
+	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
