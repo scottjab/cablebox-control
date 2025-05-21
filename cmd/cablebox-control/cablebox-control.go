@@ -59,6 +59,19 @@ var htmlTemplate = `
             gap: 10px;
             margin: 20px 0;
         }
+        .direct-channel {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            align-items: center;
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            width: 80px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
         button {
             padding: 10px 20px;
             font-size: 16px;
@@ -88,6 +101,10 @@ var htmlTemplate = `
             <button onclick="changeChannel('up')">Channel Up</button>
             <button onclick="changeChannel('down')">Channel Down</button>
         </div>
+        <div class="direct-channel">
+            <input type="number" id="channelNumber" min="1" placeholder="Channel #">
+            <button onclick="setDirectChannel()">Go to Channel</button>
+        </div>
     </div>
 
     <script>
@@ -98,6 +115,28 @@ var htmlTemplate = `
             .then(response => response.json())
             .then(data => {
                 updateStatus(data);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function setDirectChannel() {
+            const channelNumber = document.getElementById('channelNumber').value;
+            if (!channelNumber) {
+                alert('Please enter a channel number');
+                return;
+            }
+            
+            fetch('/channel/direct', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ channel: parseInt(channelNumber) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateStatus(data);
+                document.getElementById('channelNumber').value = '';
             })
             .catch(error => console.error('Error:', error));
         }
@@ -128,6 +167,7 @@ func main() {
 	http.HandleFunc("/status", handleStatus)
 	http.HandleFunc("/channel/up", handleChannelUp)
 	http.HandleFunc("/channel/down", handleChannelDown)
+	http.HandleFunc("/channel/direct", handleChannelDirect)
 
 	fmt.Println("Server starting on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -177,6 +217,62 @@ func handleChannelDown(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error getting status", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+func handleChannelDirect(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var request struct {
+		Channel int `json:"channel"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if request.Channel < 1 {
+		http.Error(w, "Channel number must be positive", http.StatusBadRequest)
+		return
+	}
+
+	cmd := ChannelCommand{
+		Command: "direct",
+		Channel: request.Channel,
+	}
+
+	conn, err := os.OpenFile(channelSocket, os.O_WRONLY, 0)
+	if err != nil {
+		http.Error(w, "Error opening channel socket", http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		http.Error(w, "Error marshaling command", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := conn.Write(data); err != nil {
+		http.Error(w, "Error writing to channel socket", http.StatusInternalServerError)
+		return
+	}
+
+	// Give the system a moment to process the command
+	time.Sleep(100 * time.Millisecond)
+
+	status, err := getPlayStatus()
+	if err != nil {
+		http.Error(w, "Error getting status", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
 }
