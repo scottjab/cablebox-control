@@ -40,24 +40,8 @@
     in
     flake-utils.lib.eachSystem supportedSystems perSystem
     // {
-      nixosModules.default = { config, lib, pkgs, ... }:
-        let
-          serviceModule = import ./nix/modules/service.nix {
-            inherit config lib pkgs;
-          };
-        in
-        {
-          imports = [ serviceModule ];
-        };
+      nixosModules.default = { config, lib, pkgs, ... }: import ./nix/modules/service.nix { inherit config lib pkgs; };
 
-      darwinModules.default = { config, lib, pkgs, ... }:
-        let
-          serviceModule = import ./nix/modules/service.nix {
-            inherit config lib pkgs;
-          };
-        in
-        {
-          imports = [ serviceModule ];
-        };
+      darwinModules.default = { config, lib, pkgs, ... }: import ./nix/modules/service.nix { inherit config lib pkgs; };
     };
 }
