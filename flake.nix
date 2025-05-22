@@ -76,9 +76,8 @@
                 Restart = "always";
                 RestartSec = "10";
                 DynamicUser = true;
-                ProtectSystem = "strict";
-                ProtectHome = true;
-                NoNewPrivileges = true;
+                ProtectHome = false;
+                NoNewPrivileges = false;
               };
             };
           };
