@@ -6,8 +6,14 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in
@@ -22,8 +28,15 @@
           default = self.packages.${system}.cablebox-control;
         };
       }
-    ) // {
-      nixosModules.cablebox-control = { config, lib, pkgs, ... }:
+    )
+    // {
+      nixosModules.cablebox-control =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
         with lib;
         let
           cfg = config.services.cablebox-control;
@@ -36,6 +49,21 @@
               default = self.packages.${pkgs.system}.cablebox-control;
               description = "The cablebox-control package to use.";
             };
+            statusSocket = mkOption {
+              type = types.str;
+              default = "FieldStation42/runtime/play_status.socket";
+              description = "Path to the play status socket";
+            };
+            channelSocket = mkOption {
+              type = types.str;
+              default = "FieldStation42/runtime/channel.socket";
+              description = "Path to the channel socket";
+            };
+            listenAddress = mkOption {
+              type = types.str;
+              default = ":8080";
+              description = "Address to listen on (e.g. ':8080' or '127.0.0.1:8080')";
+            };
           };
 
           config = mkIf cfg.enable {
@@ -44,7 +72,7 @@
               wantedBy = [ "multi-user.target" ];
               after = [ "network.target" ];
               serviceConfig = {
-                ExecStart = "${cfg.package}/bin/cablebox-control";
+                ExecStart = "${cfg.package}/bin/cablebox-control -status-socket ${cfg.statusSocket} -channel-socket ${cfg.channelSocket} -listen ${cfg.listenAddress}";
                 Restart = "always";
                 RestartSec = "10";
                 DynamicUser = true;
@@ -56,4 +84,4 @@
           };
         };
     };
-} 
+}
