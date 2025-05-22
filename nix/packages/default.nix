@@ -13,11 +13,9 @@ buildGoModule rec {
 
   vendorHash = null; # This will be filled in automatically on first build
 
+  # Specify the path to the main package relative to the root
   subPackages = [ "cmd/cablebox-control" ];
 
-  preBuild = ''
-    cd $sourceRoot
-  '';
 
   meta = with lib; {
     description = "Cablebox control application";
