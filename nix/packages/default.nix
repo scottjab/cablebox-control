@@ -14,8 +14,11 @@ buildGoModule rec {
 
   # Build the main package
   buildPhase = ''
-    cd cmd/cablebox-control
-    go build -o $out/bin/cablebox-control
+    export GOPATH=$TMPDIR/go
+    mkdir -p $GOPATH/src/github.com/scottjab
+    cp -r $src $GOPATH/src/github.com/scottjab/cablebox-control
+    cd $GOPATH/src/github.com/scottjab/cablebox-control
+    go build -o $out/bin/cablebox-control ./cmd/cablebox-control
   '';
 
   meta = with lib; {
