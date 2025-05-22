@@ -5,11 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
-	"net"
 	"net/http"
-	"time"
+	"os"
 )
 
 type PlayStatus struct {
@@ -293,20 +291,11 @@ func handleChannelDirect(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPlayStatus() (*PlayStatus, error) {
-	log.Printf("Attempting to connect to play status socket: %s", playStatusSocket)
-	conn, err := net.Dial("unix", playStatusSocket)
+	log.Printf("Reading play status from file: %s", playStatusSocket)
+	data, err := os.ReadFile(playStatusSocket)
 	if err != nil {
-		log.Printf("Failed to connect to play status socket: %v", err)
-		return nil, fmt.Errorf("failed to connect to play status socket: %v", err)
-	}
-	defer conn.Close()
-
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-
-	data, err := io.ReadAll(conn)
-	if err != nil {
-		log.Printf("Failed to read from play status socket: %v", err)
-		return nil, fmt.Errorf("failed to read from play status socket: %v", err)
+		log.Printf("Failed to read play status file: %v", err)
+		return nil, fmt.Errorf("failed to read play status file: %v", err)
 	}
 
 	var status PlayStatus
@@ -321,12 +310,6 @@ func getPlayStatus() (*PlayStatus, error) {
 
 func sendChannelCommand(command string) error {
 	log.Printf("Attempting to send channel command: %s", command)
-	conn, err := net.Dial("unix", channelSocket)
-	if err != nil {
-		log.Printf("Failed to connect to channel socket: %v", err)
-		return fmt.Errorf("failed to connect to channel socket: %v", err)
-	}
-	defer conn.Close()
 
 	cmd := ChannelCommand{
 		Command: command,
@@ -338,9 +321,9 @@ func sendChannelCommand(command string) error {
 		return fmt.Errorf("failed to marshal channel command: %v", err)
 	}
 
-	if _, err := conn.Write(data); err != nil {
-		log.Printf("Failed to write to channel socket: %v", err)
-		return fmt.Errorf("failed to write to channel socket: %v", err)
+	if err := os.WriteFile(channelSocket, data, 0666); err != nil {
+		log.Printf("Failed to write to channel file: %v", err)
+		return fmt.Errorf("failed to write to channel file: %v", err)
 	}
 
 	log.Printf("Successfully sent channel command: %s", command)
