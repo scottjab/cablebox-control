@@ -17,7 +17,9 @@
       perSystem = system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          package = pkgs.callPackage ./nix/packages { src = self; };
+          package = pkgs.callPackage ./nix/packages {
+            src = pkgs.lib.cleanSource self;
+          };
         in
         {
           packages = {

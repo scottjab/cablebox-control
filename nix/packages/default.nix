@@ -15,6 +15,10 @@ buildGoModule rec {
 
   subPackages = [ "cmd/cablebox-control" ];
 
+  preBuild = ''
+    cd $sourceRoot
+  '';
+
   meta = with lib; {
     description = "Cablebox control application";
     homepage = "https://github.com/scottjab/cablebox-control";
