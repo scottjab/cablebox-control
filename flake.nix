@@ -75,7 +75,7 @@
                 ExecStart = "${cfg.package}/bin/cablebox-control -status-socket ${cfg.statusSocket} -channel-socket ${cfg.channelSocket} -listen ${cfg.listenAddress}";
                 Restart = "always";
                 RestartSec = "10";
-                DynamicUser = true;
+                DynamicUser = false;
                 ProtectHome = false;
                 NoNewPrivileges = false;
                 User = "scottjab";
