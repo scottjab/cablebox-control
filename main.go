@@ -165,11 +165,18 @@ var htmlTemplate = `
 `
 
 func main() {
+	// Configure logging
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
+	log.Println("Starting Cable Box Control application")
+
 	// Define flags
 	flag.StringVar(&playStatusSocket, "status-socket", "FieldStation42/runtime/play_status.socket", "Path to the play status socket")
 	flag.StringVar(&channelSocket, "channel-socket", "FieldStation42/runtime/channel.socket", "Path to the channel socket")
 	flag.StringVar(&listenAddr, "listen", ":8080", "Address to listen on (e.g. ':8080' or '127.0.0.1:8080')")
 	flag.Parse()
+
+	log.Printf("Configuration loaded - Status socket: %s, Channel socket: %s, Listen address: %s",
+		playStatusSocket, channelSocket, listenAddr)
 
 	http.HandleFunc("/", handleHome)
 	http.HandleFunc("/status", handleStatus)
@@ -177,62 +184,75 @@ func main() {
 	http.HandleFunc("/channel/down", handleChannelDown)
 	http.HandleFunc("/channel/direct", handleChannelDirect)
 
-	fmt.Printf("Server starting on %s...\n", listenAddr)
-	fmt.Printf("Using status socket: %s\n", playStatusSocket)
-	fmt.Printf("Using channel socket: %s\n", channelSocket)
+	log.Printf("Server starting on %s...", listenAddr)
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received request for home page from %s", r.RemoteAddr)
 	tmpl := template.Must(template.New("home").Parse(htmlTemplate))
 	status, err := getPlayStatus()
 	if err != nil {
+		log.Printf("Error getting status for home page: %v", err)
 		http.Error(w, "Error getting status", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Rendering home page with status: %+v", status)
 	tmpl.Execute(w, status)
 }
 
 func handleStatus(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received status request from %s", r.RemoteAddr)
 	status, err := getPlayStatus()
 	if err != nil {
+		log.Printf("Error getting status: %v", err)
 		http.Error(w, "Error getting status", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Sending status response: %+v", status)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
 }
 
 func handleChannelUp(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received channel up request from %s", r.RemoteAddr)
 	if err := sendChannelCommand("up"); err != nil {
+		log.Printf("Error sending channel up command: %v", err)
 		http.Error(w, "Error changing channel", http.StatusInternalServerError)
 		return
 	}
 	status, err := getPlayStatus()
 	if err != nil {
+		log.Printf("Error getting status after channel up: %v", err)
 		http.Error(w, "Error getting status", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Channel up successful, new status: %+v", status)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
 }
 
 func handleChannelDown(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received channel down request from %s", r.RemoteAddr)
 	if err := sendChannelCommand("down"); err != nil {
+		log.Printf("Error sending channel down command: %v", err)
 		http.Error(w, "Error changing channel", http.StatusInternalServerError)
 		return
 	}
 	status, err := getPlayStatus()
 	if err != nil {
+		log.Printf("Error getting status after channel down: %v", err)
 		http.Error(w, "Error getting status", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Channel down successful, new status: %+v", status)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
 }
 
 func handleChannelDirect(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
+		log.Printf("Invalid method %s for direct channel request from %s", r.Method, r.RemoteAddr)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -242,56 +262,68 @@ func handleChannelDirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		log.Printf("Error decoding direct channel request from %s: %v", r.RemoteAddr, err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	log.Printf("Received direct channel request for channel %d from %s", request.Channel, r.RemoteAddr)
+
 	if request.Channel < 1 {
+		log.Printf("Invalid channel number %d requested from %s", request.Channel, r.RemoteAddr)
 		http.Error(w, "Channel number must be positive", http.StatusBadRequest)
 		return
 	}
 
 	if err := sendChannelCommand(fmt.Sprintf("direct %d", request.Channel)); err != nil {
+		log.Printf("Error sending direct channel command: %v", err)
 		http.Error(w, "Error changing channel", http.StatusInternalServerError)
 		return
 	}
 
 	status, err := getPlayStatus()
 	if err != nil {
+		log.Printf("Error getting status after direct channel change: %v", err)
 		http.Error(w, "Error getting status", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Direct channel change successful, new status: %+v", status)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
 }
 
 func getPlayStatus() (*PlayStatus, error) {
+	log.Printf("Attempting to connect to play status socket: %s", playStatusSocket)
 	conn, err := net.Dial("unix", playStatusSocket)
 	if err != nil {
+		log.Printf("Failed to connect to play status socket: %v", err)
 		return nil, fmt.Errorf("failed to connect to play status socket: %v", err)
 	}
 	defer conn.Close()
 
-	// Set a read deadline
 	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 
-	// Read the response
 	data, err := io.ReadAll(conn)
 	if err != nil {
+		log.Printf("Failed to read from play status socket: %v", err)
 		return nil, fmt.Errorf("failed to read from play status socket: %v", err)
 	}
 
 	var status PlayStatus
 	if err := json.Unmarshal(data, &status); err != nil {
+		log.Printf("Failed to parse play status: %v", err)
 		return nil, fmt.Errorf("failed to parse play status: %v", err)
 	}
 
+	log.Printf("Successfully retrieved play status: %+v", status)
 	return &status, nil
 }
 
 func sendChannelCommand(command string) error {
+	log.Printf("Attempting to send channel command: %s", command)
 	conn, err := net.Dial("unix", channelSocket)
 	if err != nil {
+		log.Printf("Failed to connect to channel socket: %v", err)
 		return fmt.Errorf("failed to connect to channel socket: %v", err)
 	}
 	defer conn.Close()
@@ -302,12 +334,15 @@ func sendChannelCommand(command string) error {
 
 	data, err := json.Marshal(cmd)
 	if err != nil {
+		log.Printf("Failed to marshal channel command: %v", err)
 		return fmt.Errorf("failed to marshal channel command: %v", err)
 	}
 
 	if _, err := conn.Write(data); err != nil {
+		log.Printf("Failed to write to channel socket: %v", err)
 		return fmt.Errorf("failed to write to channel socket: %v", err)
 	}
 
+	log.Printf("Successfully sent channel command: %s", command)
 	return nil
 }
