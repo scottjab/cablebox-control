@@ -18,17 +18,7 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           package = pkgs.callPackage ./nix/packages {
-            src = pkgs.lib.cleanSourceWith {
-              src = self;
-              filter = path: type:
-                let
-                  baseName = baseNameOf path;
-                in
-                baseName != "flake.nix" &&
-                baseName != "flake.lock" &&
-                baseName != ".git" &&
-                !(pkgs.lib.hasPrefix "nix/" baseName);
-            };
+            src = ./.;
           };
         in
         {

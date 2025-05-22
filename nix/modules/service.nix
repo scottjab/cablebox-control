@@ -20,7 +20,7 @@ in
     enable = mkEnableOption "cablebox-control service";
     package = mkOption {
       type = package;
-      default = pkgs.callPackage ./package.nix { };
+      default = pkgs.cablebox-control;
       description = "The cablebox-control package to use.";
     };
     statusSocket = mkOption {
@@ -55,17 +55,43 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    systemd.services.cablebox-control = {
-      description = "Cablebox control service";
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        ExecStart = "${cfg.package}/bin/cablebox-control ${lib.concatStringsSep " " args}";
-        Restart = "always";
-        DynamicUser = true;
-        RuntimeDirectory = "cablebox-control";
-        RuntimeDirectoryMode = "0755";
+  config = mkIf cfg.enable (
+    if pkgs.stdenv.isDarwin then {
+      launchd.user.agents.cablebox-control = {
+        enable = true;
+        config = {
+          Label = "com.github.scottjab.cablebox-control";
+          ProgramArguments = [
+            "${cfg.package}/bin/cablebox-control"
+          ] ++ args;
+          RunAtLoad = true;
+          KeepAlive = true;
+          StandardErrorPath = "/tmp/cablebox-control.err.log";
+          StandardOutPath = "/tmp/cablebox-control.out.log";
+        };
       };
-    };
-  };
+    } else {
+      {
+        users.users.${cfg.user} = {
+          isSystemUser = true;
+          group = cfg.group;
+          description = "Cablebox Control Service User";
+        };
+
+        users.groups.${cfg.group} = { };
+
+        systemd.services.cablebox-control = {
+          description = "Cablebox control service";
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = "${cfg.package}/bin/cablebox-control ${lib.concatStringsSep " " args}";
+            Restart = "always";
+            DynamicUser = true;
+            RuntimeDirectory = "cablebox-control";
+            RuntimeDirectoryMode = "0755";
+          };
+        };
+      }
+    }
+  );
 }

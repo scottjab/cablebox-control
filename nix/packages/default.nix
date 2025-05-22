@@ -16,6 +16,13 @@ buildGoModule rec {
   # Build from the root directory where main.go is now located
   subPackages = [ "." ];
 
+  # Ensure we're in the correct directory for the build
+  preBuild = ''
+    cd $sourceRoot
+    pwd
+    ls -la
+  '';
+
   meta = with lib; {
     description = "Cablebox control application";
     homepage = "https://github.com/scottjab/cablebox-control";
