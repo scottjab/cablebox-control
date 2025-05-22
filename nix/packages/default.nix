@@ -12,14 +12,7 @@ buildGoModule rec {
 
   vendorHash = null; # This will be filled in automatically on first build
 
-  # Build the main package
-  buildPhase = ''
-    export GOPATH=$TMPDIR/go
-    mkdir -p $GOPATH/src/github.com/scottjab
-    cp -r $src $GOPATH/src/github.com/scottjab/cablebox-control
-    cd $GOPATH/src/github.com/scottjab/cablebox-control
-    go build -o $out/bin/cablebox-control ./cmd/cablebox-control
-  '';
+  subPackages = [ "cmd/cablebox-control" ];
 
   meta = with lib; {
     description = "Cablebox control application";
