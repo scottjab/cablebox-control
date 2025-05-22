@@ -72,14 +72,14 @@ in
       };
     } else {
       {
-        users.users.${cfg.user} = {
-          isSystemUser = true;
-          group = cfg.group;
-          description = "Cablebox Control Service User";
+        users = {
+          users.${cfg.user} = {
+            isSystemUser = true;
+            group = cfg.group;
+            description = "Cablebox Control Service User";
+          };
+          groups.${cfg.group} = { };
         };
-
-        users.groups.${cfg.group} = { };
-
         systemd.services.cablebox-control = {
           description = "Cablebox control service";
           wantedBy = [ "multi-user.target" ];
