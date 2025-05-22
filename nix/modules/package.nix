@@ -4,7 +4,7 @@ buildGoModule {
   pname = "cablebox-control";
   version = "0.1.0";
   src = ../../..;
-  vendorSha256 = null;
+  vendorHash = null;
   meta = with lib; {
     description = "Cablebox control service";
     homepage = "https://github.com/scottjab/cablebox-control";
