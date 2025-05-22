@@ -12,6 +12,9 @@ buildGoModule rec {
 
   vendorHash = null; # This will be filled in automatically on first build
 
+  # Ensure we're in the correct directory for the build
+  subPackages = [ "cmd/cablebox-control" ];
+
   meta = with lib; {
     description = "Cablebox control application";
     homepage = "https://github.com/scottjab/cablebox-control";
