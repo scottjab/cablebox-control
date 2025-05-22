@@ -13,9 +13,8 @@ buildGoModule rec {
 
   vendorHash = null; # This will be filled in automatically on first build
 
-  # Specify the path to the main package relative to the root
-  subPackages = [ "cmd/cablebox-control" ];
-
+  # Build from the root directory where main.go is now located
+  subPackages = [ "." ];
 
   meta = with lib; {
     description = "Cablebox control application";
