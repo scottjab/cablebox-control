@@ -78,6 +78,8 @@
                 DynamicUser = true;
                 ProtectHome = false;
                 NoNewPrivileges = false;
+                User = "scottjab";
+                Group = "scottjab";
               };
             };
           };
