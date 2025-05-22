@@ -2,13 +2,14 @@
   lib,
   buildGoModule,
   stdenv,
+  src,
 }:
 
 buildGoModule rec {
   pname = "cablebox-control";
   version = "0.1.0";
 
-  src = ./.;
+  inherit src;
 
   vendorHash = null; # This will be filled in automatically on first build
 
