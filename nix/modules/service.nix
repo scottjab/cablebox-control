@@ -71,30 +71,23 @@ in
         };
       };
     } else {
-      {
-        inherit (config) users systemd;
-        users = {
-          users.${cfg.user} = {
-            isSystemUser = true;
-            group = cfg.group;
-            description = "Cablebox Control Service User";
-          };
-          groups.${cfg.group} = { };
+      users.users.${cfg.user} = {
+        isSystemUser = true;
+        group = cfg.group;
+        description = "Cablebox Control Service User";
+      };
+      users.groups.${cfg.group} = { };
+      systemd.services.cablebox-control = {
+        description = "Cablebox control service";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          ExecStart = "${cfg.package}/bin/cablebox-control ${lib.concatStringsSep " " args}";
+          Restart = "always";
+          DynamicUser = true;
+          RuntimeDirectory = "cablebox-control";
+          RuntimeDirectoryMode = "0755";
         };
-        systemd = {
-          services.cablebox-control = {
-            description = "Cablebox control service";
-            wantedBy = [ "multi-user.target" ];
-            serviceConfig = {
-              ExecStart = "${cfg.package}/bin/cablebox-control ${lib.concatStringsSep " " args}";
-              Restart = "always";
-              DynamicUser = true;
-              RuntimeDirectory = "cablebox-control";
-              RuntimeDirectoryMode = "0755";
-            };
-          };
-        };
-      }
+      };
     }
   );
 }
